@@ -2,6 +2,7 @@ from kivy.app import App
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.uix.button import Button
+from kivy.uix.boxlayout import BoxLayout
 import requests
 import json
 import os
@@ -11,7 +12,7 @@ Window.clearcolor = (.05,0,.8,1)
 
 KV = '''
 
-<ReqButton>
+<ReqBox>
     size_hint: 1, None
     size: -1, 40
 
@@ -40,8 +41,9 @@ BoxLayout:
         orientation: 'horizontal'
         BoxLayout: #left (request history)
             size_hint: (.3, 1)
+            orientation: 'vertical'
             ScrollView:
-                size_hint: (1, 1)
+                size_hint: (1, .95)
                 do_scroll_x: False
 
                 GridLayout:
@@ -168,10 +170,16 @@ BoxLayout:
 
 
 '''
-class ReqButton(Button):
-    def __init__(self, key, **kwargs):
+class RButton(Button):
+    def __init__(self, key,  **kwargs):
         self.key = key
         Button.__init__(self, **kwargs)
+
+class ReqBox(BoxLayout):
+    def __init__(self, key, text, onPressOp, onPressDel, **kwargs):
+        super().__init__(**kwargs)
+        self.add_widget(RButton(key, text=text, on_press=onPressOp, size_hint=(0.85, 1)))
+        self.add_widget(RButton(key, text='X', on_press=onPressDel, size_hint=(0.15, 1)))
     
 class ReqTesterApp(App):
     def __init__(self, **kwargs):
@@ -234,11 +242,18 @@ class ReqTesterApp(App):
         except Exception as e:
             print("Oops!", e.__class__, "occurred.\n", str(e))
             return
-        print('\nMethod:  {}\nUrl:  {}\nData:  {}\nHeaders:  {}'.format(self.req_method, url, data, headers))
         self.root.ids.ti_resh.text = str(r.headers)
         self.root.ids.ti_resd.text = str(r.text)
         self.root.ids.ti_resc.text = str(r.cookies)
         self.root.ids.lb_sts.text = 'Status:  '+str(r.status_code)
+    def deleteRequest(self, item):
+        try:
+            key = item.key
+            if key in self.hist.keys():
+                self.hist.pop(key)
+        except Exception as e:
+            print("Oops!", e.__class__, "occurred.\n", str(e)) 
+        self._load_Hist()
     def saveRequest(self, item):
         url = self.root.ids.ti_url.text
         base_url = self.base_url
@@ -263,23 +278,11 @@ class ReqTesterApp(App):
         with open(self.dbFile, 'w') as json_file:
             json.dump(self.hist, json_file)
         self._load_Hist()
-    def onTouch(self, item, touch): #!TODO Error exists
-        if touch.button == "right":
-            try:
-                if item.key in self.hist:
-                    del self.hist[item.key]
-                chs = item.parent.children
-                for ch in chs:
-                    if ch.key == item.key:
-                        item.parent.remove_widget(ch)
-                        return
-            except Exception as e:
-                print("Oops!", e.__class__, "occurred.\n", str(e))
     def _load_Hist(self):
         reqHistCont = self.root.ids.gl_reqhist
         reqHistCont.clear_widgets()
         for key in self.hist.keys():
-            reqHistCont.add_widget(ReqButton(key, text=self.hist[key]['name'], on_press=self.loadHistory, on_touch_down=self.onTouch))
+            reqHistCont.add_widget(ReqBox(key, text=self.hist[key]['name'], onPressOp=self.loadHistory, onPressDel=self.deleteRequest))
 
 
 if __name__ == '__main__':
