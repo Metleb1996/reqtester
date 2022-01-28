@@ -97,6 +97,7 @@ BoxLayout:
                                 hint_text: "Request Headers"
                                 foreground_color: (0, 0, 1, 1)
                                 font_size: 22
+                                text: "{}"
                                    
                     TabbedPanelItem:
                         text: 'Data'
@@ -107,6 +108,7 @@ BoxLayout:
                                 hint_text: "Request Data"
                                 foreground_color: (0, 0, 1, 1)
                                 font_size: 22
+                                text: "{}"
                     
                     TabbedPanelItem:
                         text: 'Cookies'
@@ -117,6 +119,7 @@ BoxLayout:
                                 hint_text: "Request Cookies"
                                 foreground_color: (0, 0, 1, 1)
                                 font_size: 22
+                                text: "{}"
                         
                                 
                             
@@ -226,22 +229,26 @@ class ReqTesterApp(App):
         r = None
         headers = self.root.ids.ti_reqh.text
         data = self.root.ids.ti_reqd.text
+        cookies = self.root.ids.ti_reqc.text
         url = self.base_url+self.root.ids.ti_url.text
         try:
-            headers = json.loads(headers)
+            headers_ = json.loads(headers)
+            data_ = json.loads(data)
+            cookies_ = json.loads(cookies)
             if self.req_method == "GET":
-                r = requests.get(url, params=data, headers=headers)
+                r = requests.get(url, json=data_, headers=headers_, cookies=cookies_)
             if self.req_method == "POST":
-                r = requests.post(url, data=data, headers=headers)
+                r = requests.post(url, json=data_, headers=headers_, cookies=cookies_)
             if self.req_method == "PUT":
-                r = requests.put(url, data=data, headers=headers)
+                r = requests.put(url, json=data_, headers=headers_, cookies=cookies_)
             if self.req_method == "PATCH":
-                r = requests.patch(url, data=data, headers=headers)
+                r = requests.patch(url, json=data_, headers=headers_, cookies=cookies_)
             if self.req_method == "DELETE":
-                r = requests.delete(url, params=data, headers=headers)
+                r = requests.delete(url, json=data_, headers=headers_, cookies=cookies_)
         except Exception as e:
-            print("Oops!", e.__class__, "occurred.\n", str(e))
+            print("Oops(sendRequest)!", e.__class__, "occurred.\n", str(e))
             return
+        print('\nMethod:  {}\nUrl:  {}\nData:  {}\nHeaders:  {}'.format(self.req_method, url, data, headers))
         self.root.ids.ti_resh.text = str(r.headers)
         self.root.ids.ti_resd.text = str(r.text)
         self.root.ids.ti_resc.text = str(r.cookies)
